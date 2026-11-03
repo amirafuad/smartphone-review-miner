@@ -4,7 +4,7 @@ A web app that reads smartphone customer reviews (Indonesian or English) and tel
 
 It is a modern, interactive rebuild of my undergraduate thesis, *User Review and Mining Application for Smartphone Products*, which used the Naïve Bayes algorithm for review classification.
 
-**Live demo:** _add your GitHub Pages / Vercel / Netlify link here_
+**Live demo:** (https://amirafuad.github.io/smartphone-review-miner/)
 
 ## Features
 
