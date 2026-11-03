@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smartphone Review Miner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF2F6;
+  --surface: #FFFFFF;
+  --ink: #0F1B2D;
+  --muted: #566579;
+  --line: #D3DCE6;
+  --pos: #087A60;
+  --neg: #C0275A;
+  --mix: #8A5A0A;
+  --btn: #0F1B2D;
+  --on-btn: #FFFFFF;
+  --focus: #2F6FED;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1420;
+    --surface: #121D2D;
+    --ink: #E7EEF7;
+    --muted: #93A3B8;
+    --line: #243349;
+    --pos: #3DD1AC;
+    --neg: #FF7AA5;
+    --mix: #F2B84B;
+    --btn: #E7EEF7;
+    --on-btn: #0C1420;
+    --focus: #7FA8FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1420;
+  --surface: #121D2D;
+  --ink: #E7EEF7;
+  --muted: #93A3B8;
+  --line: #243349;
+  --pos: #3DD1AC;
+  --neg: #FF7AA5;
+  --mix: #F2B84B;
+  --btn: #E7EEF7;
+  --on-btn: #0C1420;
+  --focus: #7FA8FF;
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2 {
+  font-family: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.1;
+}
+h1 { font-size: clamp(2rem, 5.2vw, 3.1rem); }
+h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
+p { margin: 0; }
+ul { list-style: none; margin: 0; padding: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 20px 56px; }
+.top { margin-bottom: 28px; }
+.lede { margin-top: 12px; max-width: 62ch; color: var(--muted); font-size: 1.05rem; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (min-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 44px; }
+  .input { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); }
+}
+textarea {
+  width: 100%;
+  min-height: 300px;
+  resize: vertical;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+textarea::placeholder { color: var(--muted); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+textarea:focus-visible { outline-offset: 0; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+button {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--btn);
+  background: var(--btn);
+  color: var(--on-btn);
+  cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+button:hover { filter: brightness(1.12); }
+.count { margin-left: auto; color: var(--muted); font-size: 0.9rem; }
+.hint { margin-top: 10px; color: var(--muted); font-size: 0.88rem; max-width: 52ch; }
+
+.out > * + * { margin-top: 36px; }
+.stack { display: flex; height: 18px; border-radius: 9px; overflow: hidden; background: var(--line); gap: 2px; }
+.seg { flex-basis: 0; min-width: 6px; }
+.seg.positive, .dot.positive { background: var(--pos); }
+.seg.negative, .dot.negative { background: var(--neg); }
+.seg.mixed, .dot.mixed { background: var(--mix); }
+.seg.unclear, .dot.unclear { background: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 12px; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.pct { color: var(--muted); }
+
+.features li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 4px 16px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.features li:last-child { border-bottom: 1px solid var(--line); }
+.fname { font-weight: 600; }
+.fbar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--line); gap: 2px; }
+.fbar span { flex-basis: 0; }
+.fpos { background: var(--pos); }
+.fneg { background: var(--neg); }
+.fnum { grid-column: 2; color: var(--muted); font-size: 0.88rem; }
+@media (max-width: 520px) { .features li { grid-template-columns: minmax(0, 1fr); } .fnum { grid-column: 1; } }
+
+.reviews > li { border-left: 4px solid var(--line); padding: 4px 0 4px 16px; margin-bottom: 22px; }
+.reviews > li.positive { border-left-color: var(--pos); }
+.reviews > li.negative { border-left-color: var(--neg); }
+.reviews > li.mixed { border-left-color: var(--mix); }
+.vhead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.badge { font-weight: 600; font-size: 0.92rem; }
+.badge.positive { color: var(--pos); }
+.badge.negative { color: var(--neg); }
+.badge.mixed { color: var(--mix); }
+.badge.unclear { color: var(--muted); }
+.conf { color: var(--muted); font-size: 0.85rem; }
+.rtext { font-size: 1.04rem; line-height: 1.85; max-width: 70ch; }
+mark.w { color: inherit; padding: 1px 3px; border-radius: 4px; }
+mark.w.pos { background: color-mix(in srgb, var(--pos) calc(var(--k) * 100%), transparent); }
+mark.w.neg { background: color-mix(in srgb, var(--neg) calc(var(--k) * 100%), transparent); }
+mark.w.negated, .negword { text-decoration: underline dotted; text-underline-offset: 4px; }
+.negword { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tags li { font-size: 0.82rem; padding: 1px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+.tags li b { font-weight: 700; margin-left: 4px; }
+.tags li b.p { color: var(--pos); }
+.tags li b.n { color: var(--neg); }
+.key { color: var(--muted); font-size: 0.88rem; max-width: 66ch; margin-bottom: 18px; }
+.empty { color: var(--muted); padding: 28px 0; }
+
+details.how { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 20px; }
+details.how summary { cursor: pointer; font-family: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif; font-weight: 700; font-size: 1.3rem; }
+.how-body { margin-top: 16px; display: grid; gap: 14px; max-width: 70ch; }
+.how-body ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 10px; }
+.formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; overflow-x: auto; }
+.words { display: grid; gap: 10px; }
+.words div { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.words strong { min-width: 7.5rem; }
+.chip { font-size: 0.85rem; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line); }
+.chip.p { color: var(--pos); border-color: color-mix(in srgb, var(--pos) 45%, transparent); }
+.chip.n { color: var(--neg); border-color: color-mix(in srgb, var(--neg) 45%, transparent); }
+footer { margin-top: 40px; color: var(--muted); font-size: 0.88rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+/* MODEL_START */
+const NEGATIONS = new Set(["tidak","tak","gak","ga","nggak","ngga","enggak","engga","tdk","bukan","kurang","belum","no","not","never","dont","doesnt","didnt","isnt","wasnt","cant","cannot","wont","without","tanpa"]);
+const SPLITTERS = new Set(["tapi","namun","but","however","padahal","walau","walaupun","meskipun","although","sedangkan","dan","and","serta","though"]);
+const STOP = new Set(["yang","di","ke","dari","ini","itu","the","a","an","is","are","was","were","it","its","to","of","for","in","on","with","at","as","be","this","that","i","my","me","saya","aku","juga","sama","dengan","untuk","pada","ada","sudah","udah","sih","deh","dong","nih","ya","lah","pun","or","have","has","had","been","so","very","just","and","too","banget","sangat","amat","really","way","nya","all"]);
+
+const TRAINING = [
+  // positive, Indonesian
+  ["Baterai awet banget, seharian main game masih sisa", "pos"],
+  ["Kamera bagus, hasil foto tajam dan warnanya natural", "pos"],
+  ["Layar jernih dan terang, nyaman dipakai nonton", "pos"],
+  ["Performa kencang, tidak lag sama sekali", "pos"],
+  ["Harga murah tapi kualitas bagus, worth it banget", "pos"],
+  ["Desain elegan, bodi tipis dan ringan", "pos"],
+  ["Pengiriman cepat, packing rapi dan aman", "pos"],
+  ["Sangat puas dengan hp ini, recommended", "pos"],
+  ["Charging cepat, sebentar sudah penuh", "pos"],
+  ["Suara speaker jernih dan keras", "pos"],
+  ["Fitur lengkap, aplikasi berjalan lancar", "pos"],
+  ["Mantap, sesuai deskripsi dan barang original", "pos"],
+  ["Seller ramah dan responsif, garansi jelas", "pos"],
+  ["Hasil video stabil dan detail, kamera depan juga bagus", "pos"],
+  ["Tidak panas walau dipakai lama, adem", "pos"],
+  ["Layar amoled bagus banget, warna cerah", "pos"],
+  ["Sinyal kuat dan stabil, wifi juga lancar", "pos"],
+  ["Baterai tahan lama, hemat daya", "pos"],
+  ["Memuaskan, hp nya cepat dan responsif", "pos"],
+  ["Bagus banget untuk harga segini, sangat puas", "pos"],
+  ["Tidak ada masalah sama sekali, semuanya berfungsi dengan baik", "pos"],
+  ["Tidak mengecewakan, kamera nya keren", "pos"],
+  ["Gak ngelag pas buat main game, lancar jaya", "pos"],
+  ["Baterainya nggak boros, awet seharian", "pos"],
+  ["Suka banget sama warnanya, cakep dan elegan", "pos"],
+  ["Terbaik di kelasnya, kualitas kamera juara", "pos"],
+  ["Pengiriman cepat sampai dengan selamat, barang bagus", "pos"],
+  ["Respon layar sentuh halus dan cepat", "pos"],
+  // positive, English
+  ["Great battery life, easily lasts two days", "pos"],
+  ["The camera is amazing, photos are sharp and vivid", "pos"],
+  ["Beautiful display, bright and smooth", "pos"],
+  ["Fast and smooth performance, no lag at all", "pos"],
+  ["Excellent value for the price, highly recommended", "pos"],
+  ["Love the design, feels premium and light", "pos"],
+  ["Fast delivery and the seller was helpful", "pos"],
+  ["Charges quickly and the fingerprint sensor is very accurate", "pos"],
+  ["Very happy with this phone, works perfectly", "pos"],
+  ["Speakers sound great and the screen is gorgeous", "pos"],
+  ["Not disappointed at all, the phone is fast", "pos"],
+  ["No lag and no overheating, really smooth", "pos"],
+  ["Charging cepat banget, mantap", "pos"],
+  ["Fast charging, battery lasts all day", "pos"],
+  ["Kualitas kamera top, hasil foto detail", "pos"],
+  ["Mantap jiwa, hp nya top", "pos"],
+  ["Sangat memuaskan, kualitas bagus", "pos"],
+  ["Layar bagus, warna tajam dan terang", "pos"],
+  ["Kamera depan bagus banget, selfie jernih", "pos"],
+  ["Oke banget, sesuai harga", "pos"],
+  ["Hasil foto tajam dan jernih di malam hari", "pos"],
+  ["Sound quality is great and the build feels solid", "pos"],
+  ["Top, works great and arrived fast", "pos"],
+  ["Cepat dan lancar, tidak ada kendala", "pos"],
+  ["Worth the money, great value for money", "pos"],
+  // negative, Indonesian
+  ["Baterai boros banget, cepat habis padahal baru dipakai sebentar", "neg"],
+  ["Kamera jelek, hasil foto buram dan noise", "neg"],
+  ["Layar sering error dan touchscreen kurang responsif", "neg"],
+  ["Performa lemot, sering lag dan hang", "neg"],
+  ["Harga mahal tapi kualitas mengecewakan", "neg"],
+  ["Hp cepat panas, tidak nyaman dipakai lama", "neg"],
+  ["Pengiriman lambat dan packing asal-asalan", "neg"],
+  ["Sangat kecewa, barang tidak sesuai deskripsi", "neg"],
+  ["Charging lama, butuh berjam-jam untuk penuh", "neg"],
+  ["Suara speaker pecah dan kecil", "neg"],
+  ["Bodi mudah tergores dan terasa murahan", "neg"],
+  ["Seller tidak responsif, garansi ribet", "neg"],
+  ["Baterai tidak awet, kamera juga tidak bagus", "neg"],
+  ["Rusak setelah seminggu, menyesal beli", "neg"],
+  ["Sinyal lemah dan wifi sering putus", "neg"],
+  ["Aplikasi sering force close, sangat mengganggu", "neg"],
+  ["Jelek banget, tidak recommended", "neg"],
+  ["Tidak worth it, terlalu mahal untuk spesifikasi segini", "neg"],
+  ["Layar retak sendiri, kualitas buruk", "neg"],
+  ["Bloatware banyak dan memori cepat penuh", "neg"],
+  ["Tidak bagus, sangat mengecewakan", "neg"],
+  ["Kamera nggak bagus sama sekali, burik", "neg"],
+  ["Gak nyaman dipakai, berat dan licin", "neg"],
+  ["Layar kurang terang kalau di luar ruangan", "neg"],
+  ["Kecewa berat, hp nya sering restart sendiri", "neg"],
+  ["Seller lambat balas dan barang cacat", "neg"],
+  ["Ngelag parah, nyesel beli, boros baterai", "neg"],
+  // negative, English
+  ["Terrible battery life, dies before noon", "neg"],
+  ["The camera is awful, photos are blurry and dark", "neg"],
+  ["Display has dead pixels and the colors look washed out", "neg"],
+  ["Slow and laggy, apps keep crashing", "neg"],
+  ["Overpriced for what you get, not worth it", "neg"],
+  ["Feels cheap and the back scratches easily", "neg"],
+  ["Late delivery and the box was damaged", "neg"],
+  ["Overheats while charging, very disappointed", "neg"],
+  ["Worst phone I have ever bought, total waste of money", "neg"],
+  ["Speaker is quiet and the software is buggy", "neg"],
+  ["Not good, not fast and not durable", "neg"],
+  ["Doesn't hold a charge, battery drains quickly", "neg"],
+  ["Washed out screen and poor camera, avoid", "neg"],
+  ["Kamera depan jelek, selfie buram", "neg"],
+  ["Hasil foto buram dan gelap, kecewa", "neg"],
+  ["Desain jelek dan terasa murahan", "neg"],
+  ["Battery drains fast, charging is slow", "neg"],
+  ["Baterai cepat habis, charging lama banget", "neg"],
+  ["The battery drains way too fast and dies by noon", "neg"],
+  ["Layar jelek, warna pucat dan sering error", "neg"],
+  ["Hasil foto jelek dan noise di malam hari", "neg"],
+  ["Kualitas buruk, cepat rusak", "neg"],
+  ["Hp lambat dan sering hang, kecewa banget", "neg"],
+  ["Barang tidak sesuai, kecewa berat", "neg"],
+  ["Poor quality, camera is blurry and slow", "neg"]
+];
+
+const ASPECTS = [
+  { id: "battery", label: "Battery", words: ["baterai","battery","batre","awet","boros","charge","charges","charging","cas","ngecas","daya","drain","drains","mah"] },
+  { id: "camera", label: "Camera", words: ["kamera","camera","foto","photo","photos","video","selfie","lensa"] },
+  { id: "screen", label: "Screen", words: ["layar","screen","display","amoled","touchscreen","touch","brightness","terang","pixel","pixels","sentuh"] },
+  { id: "performance", label: "Performance", words: ["performa","performance","lag","laggy","lagging","ngelag","lemot","hang","prosesor","processor","ram","panas","overheat","overheats","overheating","smooth","kencang","aplikasi","apps","app","restart","crash","crashing","memori","software"] },
+  { id: "price", label: "Price", words: ["harga","murah","mahal","price","value","worth","overpriced","budget"] },
+  { id: "design", label: "Design and build", words: ["desain","design","bodi","body","warna","color","colors","tipis","ringan","berat","build","premium","murahan","scratches","tergores","cakep","elegan"] },
+  { id: "audio", label: "Audio", words: ["speaker","speakers","suara","sound","audio"] },
+  { id: "service", label: "Delivery and service", words: ["pengiriman","kirim","delivery","shipping","packing","seller","penjual","garansi","warranty","service","box","kemasan","balas"] }
+];
+const ASPECT_LOOKUP = new Map();
+ASPECTS.forEach(a => a.words.forEach(w => { if (!ASPECT_LOOKUP.has(w)) ASPECT_LOOKUP.set(w, []); ASPECT_LOOKUP.get(w).push(a); }));
+
+function stem(w) {
+  return (w.length > 4 && w.endsWith("nya") && w.length - 3 >= 3) ? w.slice(0, -3) : w;
+}
+
+function tokenize(text) {
+  const re = /[\p{L}\p{N}'’]+/gu;
+  const out = [];
+  let m, prevEnd = 0, clause = 0, negLeft = 0;
+  while ((m = re.exec(text)) !== null) {
+    const gap = text.slice(prevEnd, m.index);
+    if (/[,.;:!?\n]/.test(gap)) { clause++; negLeft = 0; }
+    prevEnd = m.index + m[0].length;
+    const w = m[0].toLowerCase().replace(/['’]/g, "");
+    if (!w) continue;
+    const tok = { raw: m[0], start: m.index, end: prevEnd, clause: clause, kind: "word", stem: stem(w), feat: null, negated: false, w: null };
+    if (SPLITTERS.has(w)) {
+      tok.kind = "split";
+      out.push(tok);
+      clause++; negLeft = 0;
+      continue;
+    }
+    if (NEGATIONS.has(w)) { tok.kind = "neg"; negLeft = 2; out.push(tok); continue; }
+    if (STOP.has(w) || /^\d+$/.test(w) || w.length < 2) { tok.kind = "stop"; out.push(tok); continue; }
+    if (negLeft > 0) { tok.feat = "NOT_" + tok.stem; tok.negated = true; negLeft--; }
+    else { tok.feat = tok.stem; }
+    out.push(tok);
+  }
+  return out;
+}
+
+function featuresOf(text) {
+  return tokenize(text).filter(t => t.feat).map(t => t.feat);
+}
+
+function trainModel(data) {
+  const counts = { pos: new Map(), neg: new Map() };
+  const docs = { pos: 0, neg: 0 };
+  for (const [text, label] of data) {
+    docs[label]++;
+    for (const f of new Set(featuresOf(text))) counts[label].set(f, (counts[label].get(f) || 0) + 1);
+  }
+  const vocab = new Set([...counts.pos.keys(), ...counts.neg.keys()]);
+  const total = { pos: 0, neg: 0 };
+  counts.pos.forEach(v => { total.pos += v; });
+  counts.neg.forEach(v => { total.neg += v; });
+  const V = vocab.size;
+  const lp = { pos: new Map(), neg: new Map() };
+  vocab.forEach(w => {
+    lp.pos.set(w, Math.log(((counts.pos.get(w) || 0) + 1) / (total.pos + V)));
+    lp.neg.set(w, Math.log(((counts.neg.get(w) || 0) + 1) / (total.neg + V)));
+  });
+  const n = docs.pos + docs.neg;
+  return { counts, docs, vocab, V, total, lp, prior: { pos: Math.log(docs.pos / n), neg: Math.log(docs.neg / n) } };
+}
+
+function classify(feats, model) {
+  const seen = new Set(feats.filter(f => model.vocab.has(f)));
+  if (seen.size === 0) return { label: "none", p: 0.5 };
+  let sp = model.prior.pos, sn = model.prior.neg;
+  seen.forEach(f => { sp += model.lp.pos.get(f); sn += model.lp.neg.get(f); });
+  const p = 1 / (1 + Math.exp(sn - sp));
+  return { label: p >= 0.65 ? "pos" : p <= 0.35 ? "neg" : "mid", p: p };
+}
+
+function analyzeReview(text, model) {
+  const tokens = tokenize(text);
+  tokens.forEach(t => {
+    if (t.feat && model.vocab.has(t.feat)) t.w = model.lp.pos.get(t.feat) - model.lp.neg.get(t.feat);
+  });
+  const overall = classify(tokens.filter(t => t.feat).map(t => t.feat), model);
+  const byClause = new Map();
+  tokens.forEach(t => {
+    if (!byClause.has(t.clause)) byClause.set(t.clause, []);
+    byClause.get(t.clause).push(t);
+  });
+  let posClauses = 0, negClauses = 0;
+  const aspectMap = new Map();
+  byClause.forEach(list => {
+    const cl = classify(list.filter(t => t.feat).map(t => t.feat), model);
+    if (cl.label === "pos") posClauses++;
+    if (cl.label === "neg") negClauses++;
+    const found = new Set();
+    list.forEach(t => { (ASPECT_LOOKUP.get(t.stem) || []).forEach(a => found.add(a)); });
+    found.forEach(a => {
+      const e = aspectMap.get(a.id) || { id: a.id, label: a.label, pos: 0, neg: 0, mentions: 0 };
+      e.mentions++;
+      if (cl.label === "pos") e.pos++;
+      if (cl.label === "neg") e.neg++;
+      aspectMap.set(a.id, e);
+    });
+  });
+  let verdict;
+  if (posClauses > 0 && negClauses > 0) verdict = "mixed";
+  else if (overall.label === "pos") verdict = "positive";
+  else if (overall.label === "neg") verdict = "negative";
+  else if (posClauses > 0) verdict = "positive";
+  else if (negClauses > 0) verdict = "negative";
+  else verdict = "unclear";
+  return { text: text, tokens: tokens, verdict: verdict, conf: overall.p >= 0.5 ? overall.p : 1 - overall.p, tags: Array.from(aspectMap.values()) };
+}
+
+function summarize(list) {
+  const counts = { positive: 0, mixed: 0, negative: 0, unclear: 0 };
+  const asp = new Map();
+  list.forEach(a => {
+    counts[a.verdict]++;
+    a.tags.forEach(t => {
+      const e = asp.get(t.id) || { id: t.id, label: t.label, pos: 0, neg: 0, mentions: 0 };
+      e.pos += t.pos; e.neg += t.neg; e.mentions += t.mentions;
+      asp.set(t.id, e);
+    });
+  });
+  const features = Array.from(asp.values()).sort((a, b) => b.mentions - a.mentions || a.label.localeCompare(b.label));
+  return { total: list.length, counts: counts, features: features };
+}
+
+function topWords(model, n) {
+  const rows = [];
+  model.vocab.forEach(w => {
+    const c = (model.counts.pos.get(w) || 0) + (model.counts.neg.get(w) || 0);
+    if (c < 2) return;
+    rows.push({ w: w, s: model.lp.pos.get(w) - model.lp.neg.get(w) });
+  });
+  rows.sort((a, b) => b.s - a.s);
+  return { pos: rows.slice(0, n), neg: rows.slice(-n).reverse() };
+}
+/* MODEL_END */
+
+const SAMPLE = [
+  "Baterai awet banget, dipakai seharian masih sisa. Kamera juga bagus untuk harga segini.",
+  "Hasil foto buram dan layar sering error, kecewa banget.",
+  "The screen is gorgeous and the speakers sound great, but the battery drains way too fast.",
+  "Pengiriman cepat dan packing rapi, seller ramah. Recommended!",
+  "Performa lemot, sering lag dan hang kalau buka banyak aplikasi.",
+  "Fast delivery, phone works perfectly and I love the design.",
+  "Harganya mahal tapi kualitasnya tidak sebanding. Tidak worth it.",
+  "Not good for gaming, it overheats and the camera is only okay.",
+  "Desain tipis dan ringan, warnanya cakep, tapi bodinya gampang tergores.",
+  "Charging cepat dan tidak panas, mantap.",
+  "Kamera depan jelek banget, tidak sesuai deskripsi.",
+  "Great value for the money, no lag at all and the display is bright."
+];
+
+const LABELS = { positive: "Positive", negative: "Negative", mixed: "Mixed", unclear: "Unclear" };
+const MODEL = trainModel(TRAINING);
+const TOP = topWords(MODEL, 10);
+const html = htm.bind(React.createElement);
+const { useState, useMemo } = React;
+
+function Overview({ summary }) {
+  const order = ["positive", "mixed", "negative", "unclear"];
+  const total = summary.total;
+  const label = order.filter(k => summary.counts[k]).map(k => summary.counts[k] + " " + LABELS[k].toLowerCase()).join(", ");
+  return html`<div>
+    <h2>Overview</h2>
+    <div className="stack" role="img" aria-label=${"Review sentiment: " + label}>
+      ${order.filter(k => summary.counts[k]).map(k => html`<span key=${k} className=${"seg " + k} style=${{ flexGrow: summary.counts[k] }}></span>`)}
+    </div>
+    <ul className="legend">
+      ${order.filter(k => summary.counts[k]).map(k => html`<li key=${k}>
+        <span className=${"dot " + k}></span>${LABELS[k]} <strong>${summary.counts[k]}</strong>
+        <span className="pct">${Math.round(summary.counts[k] / total * 100)}%</span>
+      </li>`)}
+    </ul>
+  </div>`;
+}
+
+function Features({ features }) {
+  return html`<div>
+    <h2>Phone features mentioned</h2>
+    ${features.length === 0
+      ? html`<p className="empty">No features found yet. Mention things like the battery, camera, screen, price or delivery.</p>`
+      : html`<ul className="features">
+        ${features.map(f => {
+          const decided = f.pos + f.neg;
+          const text = decided === 0
+            ? f.mentions + (f.mentions === 1 ? " mention" : " mentions") + ", no clear sentiment"
+            : f.pos + " positive, " + f.neg + " negative (" + f.mentions + (f.mentions === 1 ? " mention)" : " mentions)");
+          return html`<li key=${f.id}>
+            <span className="fname">${f.label}</span>
+            <span className="fbar" role="img" aria-label=${f.label + ": " + text}>
+              ${f.pos ? html`<span className="fpos" style=${{ flexGrow: f.pos }}></span>` : null}
+              ${f.neg ? html`<span className="fneg" style=${{ flexGrow: f.neg }}></span>` : null}
+            </span>
+            <span className="fnum">${text}</span>
+          </li>`;
+        })}
+      </ul>`}
+  </div>`;
+}
+
+function Highlighted({ a }) {
+  const out = [];
+  let pos = 0;
+  a.tokens.forEach((t, i) => {
+    if (t.start > pos) out.push(a.text.slice(pos, t.start));
+    if (t.w !== null && Math.abs(t.w) >= 0.5) {
+      const k = Math.min(1, Math.abs(t.w) / 2.2) * 0.5 + 0.12;
+      const name = t.feat.replace("NOT_", "not ");
+      out.push(html`<mark key=${i} className=${"w " + (t.w > 0 ? "pos" : "neg") + (t.negated ? " negated" : "")} style=${{ "--k": k }} title=${name + ": leans " + (t.w > 0 ? "positive" : "negative") + " (" + (t.w > 0 ? "+" : "") + t.w.toFixed(1) + ")"}>${t.raw}</mark>`);
+    } else if (t.kind === "neg") {
+      out.push(html`<span key=${i} className="negword" title="Negation: flips the next two words">${t.raw}</span>`);
+    } else {
+      out.push(t.raw);
+    }
+    pos = t.end;
+  });
+  if (pos < a.text.length) out.push(a.text.slice(pos));
+  return html`<${React.Fragment}>${out}<//>`;
+}
+
+function ReviewRow({ a }) {
+  const showConf = a.verdict === "positive" || a.verdict === "negative";
+  return html`<li className=${a.verdict}>
+    <div className="vhead">
+      <span className=${"badge " + a.verdict}>${LABELS[a.verdict]}</span>
+      ${showConf ? html`<span className="conf">${Math.round(a.conf * 100)}% probability</span>` : null}
+    </div>
+    <p className="rtext"><${Highlighted} a=${a} /></p>
+    ${a.tags.length ? html`<ul className="tags">
+      ${a.tags.map(t => {
+        const sign = t.pos && t.neg ? "±" : t.pos ? "+" : t.neg ? "−" : "";
+        const cls = t.pos && t.neg ? "" : t.pos ? "p" : t.neg ? "n" : "";
+        const word = t.pos && t.neg ? "mixed" : t.pos ? "positive" : t.neg ? "negative" : "no clear sentiment";
+        return html`<li key=${t.id} title=${t.label + ": " + word}>${t.label}${sign ? html`<b className=${cls}>${sign}</b>` : null}</li>`;
+      })}
+    </ul>` : null}
+  </li>`;
+}
+
+function HowItWorks() {
+  const show = w => w.replace(/^NOT_/, "not ");
+  return html`<details className="how">
+    <summary>How the classifier works</summary>
+    <div className="how-body">
+      <ol>
+        <li>Each review is lowercased and split into words. Filler words are dropped, and a negation such as “tidak” or “not” flips the next two words, so “not good” is learned separately from “good”.</li>
+        <li>A Naïve Bayes classifier compares how likely those words are in positive and in negative training reviews, with add-one smoothing so unseen combinations never score zero.</li>
+        <li>Each review is also cut into clauses at commas, “tapi”, “but” and “and”. A clause that mentions a feature is classified on its own, which is how one review can praise the camera and criticise the battery.</li>
+      </ol>
+      <p className="formula">P(class | words) ∝ P(class) × ∏ P(word | class)</p>
+      <p>Trained in your browser on ${MODEL.docs.pos + MODEL.docs.neg} short labelled reviews (${MODEL.V} distinct word forms), written in Indonesian and English. It is a small demo model, so expect mistakes on slang and sarcasm.</p>
+      <div className="words">
+        <div><strong>Most positive</strong>${TOP.pos.map(r => html`<span key=${r.w} className="chip p">${show(r.w)}</span>`)}</div>
+        <div><strong>Most negative</strong>${TOP.neg.map(r => html`<span key=${r.w} className="chip n">${show(r.w)}</span>`)}</div>
+      </div>
+    </div>
+  </details>`;
+}
+
+function App() {
+  const [text, setText] = useState(SAMPLE.join("\n"));
+  const reviews = useMemo(() => text.split("\n").map(s => s.trim()).filter(Boolean).slice(0, 200), [text]);
+  const analyses = useMemo(() => reviews.map(r => analyzeReview(r, MODEL)), [reviews]);
+  const summary = useMemo(() => summarize(analyses), [analyses]);
+
+  return html`<main className="wrap">
+    <header className="top">
+      <h1>Smartphone Review Miner</h1>
+      <p className="lede">Paste customer reviews, one per line, in Indonesian or English. A Naïve Bayes classifier labels each review and each phone feature it talks about.</p>
+    </header>
+    <div className="grid">
+      <section className="input" aria-labelledby="in-h">
+        <h2 id="in-h">Reviews</h2>
+        <label className="sr" htmlFor="ta">Reviews, one per line</label>
+        <textarea id="ta" value=${text} onInput=${e => setText(e.target.value)} spellCheck=${false} placeholder="Type or paste a review, then press Enter for the next one."></textarea>
+        <div className="actions">
+          <button type="button" onClick=${() => setText(SAMPLE.join("\n"))}>Load sample reviews</button>
+          <button type="button" className="ghost" onClick=${() => setText("")}>Clear</button>
+          <span className="count">${reviews.length} ${reviews.length === 1 ? "review" : "reviews"}</span>
+        </div>
+        <p className="hint">Results update as you type. Up to 200 reviews are analysed, and nothing leaves this page.</p>
+      </section>
+      <section className="out" aria-live="polite">
+        ${reviews.length === 0
+          ? html`<p className="empty">Add a review on the left to see its sentiment. Try “Layar bagus tapi baterai boros” or “The camera is great but it overheats”.</p>`
+          : html`<${React.Fragment}>
+            <${Overview} summary=${summary} />
+            <${Features} features=${summary.features} />
+            <div>
+              <h2>Each review</h2>
+              <p className="key">Highlighted words pushed the score: green toward positive, pink toward negative, stronger colour for stronger evidence. A dotted underline marks a negated word. Hover a word for its weight.</p>
+              <ul className="reviews">${analyses.map((a, i) => html`<${ReviewRow} key=${i + a.text} a=${a} />`)}</ul>
+            </div>
+            <//>`}
+      </section>
+    </div>
+    <${HowItWorks} />
+    <footer>Built with React and a Naïve Bayes classifier written from scratch, inspired by the thesis “User Review and Mining Application for Smartphone Products”.</footer>
+  </main>`;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+</script>
+</body>
+</html>
